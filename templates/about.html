@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Us - JalanJalan.AI</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        color: #222;
+        background: #fff;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        position: relative;
+      }
+
+      /* === Gradient Blobs === */
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: 0.4;
+        z-index: 0;
+        animation: float 12s ease-in-out infinite alternate;
+      }
+
+      /* Position blobs like your screenshot */
+      .blob-left {
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, #ff7636 0%, #ffffff 70%);
+        top: 50%;
+        left: -150px;
+        transform: translateY(-50%);
+      }
+
+      .blob-right {
+        width: 450px;
+        height: 450px;
+        background: radial-gradient(circle, #ff9a6c 0%, #ffffff 70%);
+        top: 70%;
+        right: -120px;
+        transform: translateY(-50%);
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0) translateX(0);
+        }
+        50% {
+          transform: translateY(-20px) translateX(15px);
+        }
+        100% {
+          transform: translateY(0) translateX(0);
+        }
+      }
+
+      /* === About Section === */
+      .about-container {
+        max-width: 800px;
+        margin: 6rem auto 4rem auto;
+        text-align: center;
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+      }
+
+      .subheading {
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 1.2rem;
+      }
+
+      p {
+        font-size: 1rem;
+        line-height: 1.7;
+        color: #555;
+        max-width: 650px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* === Line-by-line animation === */
+      .fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.7s ease, transform 0.7s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav>
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('trip') }}" class="create-trip-btn">Create a Trip</a>
+            <div class="user-profile">
+              <button class="profile-btn">
+                <img
+                  src="{{ session['user']['picture'] if session['user'] else url_for('static', filename='assets/default-avatar.png') }}"
+                  alt="User"
+                  class="user-avatar"
+                />
+              </button>
+              <div class="dropdown-menu">
+                <a href="{{ url_for('mytrips') }}">My Trips</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+              </div>
+            </div>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="get-started-btn">Get started</a>
+          {% endif %}
+        </div>
+    </nav>
+
+    <!-- Blobs -->
+    <div class="blob blob-left"></div>
+    <div class="blob blob-right"></div>
+
+    <!-- About Section -->
+    <div class="about-container">
+      <h1 class="fade-in">Your ultimate AI-powered travel companion</h1>
+      <div class="subheading fade-in">
+        Smart, personalized itineraries designed to help you explore
+        destinations efficiently and enjoyably.
+      </div>
+      <p class="fade-in">
+        Whether you're a solo traveler, a couple, or a family, JalanJalan.AI
+        ensures your journey is optimized with curated recommendations for
+        attractions, restaurants, and hidden gems — making every trip
+        unforgettable.
+      </p>
+    </div>
+
+    <script>
+      // Reveal text line by line with delay
+      const elements = document.querySelectorAll(".fade-in");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+              setTimeout(() => {
+                entry.target.classList.add("visible");
+              }, index * 300); // 0.3s delay between each line
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+
+      elements.forEach((el) => observer.observe(el));
+    </script>
+    <script>
+      // Click to toggle dropdown
+      document.addEventListener("DOMContentLoaded", function () {
+        const userProfile = document.querySelector(".user-profile");
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector(".profile-btn");
+        const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+        profileBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle("open");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove("open");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

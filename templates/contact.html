@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Us - JalanJalan.AI</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav>
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('trip') }}" class="create-trip-btn">Create a Trip</a>
+          <div class="user-profile">
+            <button class="profile-btn">
+              <img
+                src="{{ session['user']['picture'] if session['user'] else url_for('static', filename='assets/default-avatar.png') }}"
+                alt="User"
+                class="user-avatar"
+              />
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="get-started-btn"
+            >Get started</a
+          >
+          {% endif %}
+        </div>
+    </nav>
+
+    <div class="contact-container">
+      <h2>Contact Us</h2>
+      <form id="contactForm">
+        <input type="text" name="name" placeholder="Your Name" required />
+        <input type="email" name="email" placeholder="Your Email" required />
+        <textarea
+          name="message"
+          rows="5"
+          placeholder="Your Message"
+          required
+        ></textarea>
+        <button type="submit">Send Message</button>
+      </form>
+      <div id="thankYouMessage">
+        <h3>Thank you!</h3>
+        <p>Your message has been sent successfully.</p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("contactForm");
+      const thankYouMessage = document.getElementById("thankYouMessage");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        form.style.display = "none";
+        thankYouMessage.style.display = "block";
+      });
+    </script>
+    <script>
+      // Click to toggle dropdown
+      document.addEventListener("DOMContentLoaded", function () {
+        const userProfile = document.querySelector(".user-profile");
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector(".profile-btn");
+        const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+        profileBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle("open");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove("open");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

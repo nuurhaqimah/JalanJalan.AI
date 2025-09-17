@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planner</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="hero">
+      <!-- Navbar -->
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline"
+            >JalanJalan.AI</a
+          >
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if current_user.is_authenticated %}
+          <div class="user-profile">
+            <button class="profile-btn">
+              <img
+                src="{{ session['user']['picture'] if session['user'] else url_for('static', filename='assets/default-avatar.png') }}"
+                alt="User"
+                class="user-avatar"
+              />
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="get-started-btn"
+            >Get started</a
+          >
+          {% endif %}
+        </div>
+      </nav>
+
+      <!-- Hero section -->
+      <div class="hero-content">
+        <h1>Plan Your <span>Perfect Weekend</span> In Seconds</h1>
+        <p>Your next destination, intelligently planned.</p>
+        {% if user %}
+        <a href="{{ url_for('trip') }}">Plan My Trip ➝</a>
+        {% else %}
+        <a href="{{ url_for('login') }}">Plan My Trip ➝</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <section id="how">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>1. Tell Us Your Preferences</h3>
+          <p>Enter your travel dates, budget, and interests.</p>
+        </div>
+        <div class="step">
+          <h3>2. AI Builds Your Itinerary</h3>
+          <p>Our AI creates a smart, optimized weekend plan just for you.</p>
+        </div>
+        <div class="step">
+          <h3>3. Explore & Enjoy</h3>
+          <p>
+            Get a personalized itinerary with maps, recommendations, and
+            activities.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      // Click to toggle dropdown
+      document.addEventListener("DOMContentLoaded", function () {
+        const userProfile = document.querySelector(".user-profile");
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector(".profile-btn");
+        const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+        profileBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle("open");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove("open");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Trips | AI Travel Planner</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      .trips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: center;
+        margin-top: 2rem;
+      }
+      .trip-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+        width: 340px;
+        padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        transition: box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+      }
+      .trip-card:hover {
+        box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.13);
+      }
+      .trip-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #222;
+      }
+      .trip-date {
+        font-size: 0.95rem;
+        color: #888;
+        margin-bottom: 1rem;
+      }
+      .trip-activities {
+        font-size: 1.05rem;
+        color: #444;
+        margin-bottom: 1rem;
+      }
+      .plan-btn {
+        background-color: #ff6b35;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        margin-top: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+      }
+      .plan-btn:hover {
+        background-color: #e55d2d;
+        transform: translateY(-2px);
+      }
+      .empty-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 70vh;
+        text-align: center;
+        color: #555;
+      }
+      .center-btn {
+        display: block;
+        margin: 32px auto 0 auto;
+        background: #ff6b35;
+        color: #fff;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 32px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 4px 16px 0 rgba(255, 107, 53, 0.08);
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      .center-btn:hover {
+        background: #e55d2d;
+        box-shadow: 0 8px 24px 0 rgba(255, 107, 53, 0.13);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar (same as index.html) -->
+    <nav>
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('trip') }}" class="create-trip-btn">Create a Trip</a>
+            <div class="user-profile">
+              <button class="profile-btn">
+                <img
+                  src="{{ session['user']['picture'] if session['user'] else url_for('static', filename='assets/default-avatar.png') }}"
+                  alt="User"
+                  class="user-avatar"
+                />
+              </button>
+              <div class="dropdown-menu">
+                <a href="{{ url_for('mytrips') }}">My Trips</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+              </div>
+            </div>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="get-started-btn">Get started</a>
+          {% endif %}
+        </div>
+      </nav>
+
+      <div id="trips-root">
+        <div class="empty-container" id="empty-msg" style="display:flex">
+          <h2>It seems like you have no trips...</h2>
+          <a href="{{ url_for('trip') }}" class="plan-btn center-btn">Plan my trip ➝</a>
+        </div>
+        <div class="trips-container" id="trips-list"></div>
+      </div>
+
+      <script>
+        async function loadTrips() {
+          const res = await fetch("/api/mytrips");
+          const trips = await res.json();
+          const tripsList = document.getElementById("trips-list");
+          const emptyMsg = document.getElementById("empty-msg");
+          tripsList.innerHTML = "";
+          if (!trips.length) {
+            emptyMsg.style.display = "flex";
+            return;
+          }
+          emptyMsg.style.display = "none";
+          trips.forEach((trip) => {
+            let activities = "";
+            try {
+              const itinerary =
+                typeof trip.itinerary === "string"
+                  ? JSON.parse(trip.itinerary)
+                  : trip.itinerary;
+              if (itinerary.itinerary && itinerary.itinerary.length) {
+                activities = itinerary.itinerary
+                  .map(
+                    (day) =>
+                      `<div><b>${
+                        day.day
+                      }</b><ul style="margin:0 0 0 1em;padding:0;">${day.activities
+                        .map(
+                          (act) =>
+                            `<li>${act.time ? act.time + " - " : ""}${
+                              act.location_name || act.title
+                            }</li>`
+                        )
+                        .join("")}</ul></div>`
+                  )
+                  .join("");
+              }
+            } catch (e) {}
+            tripsList.innerHTML += `
+              <div class="trip-card">
+                <div class="trip-title">${trip.trip_name || "Weekend Trip"}</div>
+                <div class="trip-date">${trip.created_at}</div>
+                <div class="trip-activities">${
+                  activities || "No activities found."
+                }</div>
+                <a href="/trip?id=${trip.id}" class="plan-btn">View Details</a>
+              </div>
+            `;
+          });
+        }
+        loadTrips();
+      </script>
+      <script>
+        // Click to toggle dropdown
+        document.addEventListener("DOMContentLoaded", function () {
+          const userProfile = document.querySelector(".user-profile");
+          if (!userProfile) return;
+          const profileBtn = userProfile.querySelector(".profile-btn");
+          const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+          profileBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userProfile.classList.toggle("open");
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener("click", function (e) {
+            if (!userProfile.contains(e.target)) {
+              userProfile.classList.remove("open");
+            }
+          });
+        });
+      </script>
+    </body>
+  </html>

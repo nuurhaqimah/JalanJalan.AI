@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planner - Trip</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Navbar (copied from index.html for consistency) -->
+    <nav>
+       <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if current_user.is_authenticated %}
+          <div class="user-profile">
+            <button class="profile-btn">
+              <img
+                src="{{ session['user']['picture'] if session['user'] else url_for('static', filename='assets/default-avatar.png') }}"
+                alt="User"
+                class="user-avatar"
+              />
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="get-started-btn"
+            >Get started</a
+          >
+          {% endif %}
+        </div>
+    </nav>
+
+    <!-- Two-Column Layout -->
+    <main class="trip-layout">
+      <!-- Left Column: Chatbot (fixed) -->
+      <section class="chatbot-column">
+        <div class="chatbot-box" id="chatbot-box">
+          <!-- Chatbot UI will be rendered here -->
+          <div id="chat-messages" class="chat-messages"></div>
+          <form id="chat-form" autocomplete="off">
+            <div class="chat-input-row">
+              <input
+                type="text"
+                id="chat-input"
+                placeholder="Type your message..."
+                autocomplete="off"
+                class="chat-input"
+              />
+              <button type="submit" class="chat-send-btn">&#9654;</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Right Column: Scrollable Itinerary -->
+      <section class="itinerary-column scrollable-itinerary">
+        <div id="itinerary-content">
+          <!-- Dynamic itinerary and hotels will be rendered here -->
+          <h2>Hotels</h2>
+          <div class="hotel-grid" id="hotel-grid">
+            <!-- Hotel cards will be injected here -->
+          </div>
+          <h2 style="margin-top: 2rem">Weekend Activities</h2>
+          <div id="activities-list">
+            <!-- Activities will be injected here -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // --- Chatbot logic ---
+      const chatMessages = document.getElementById("chat-messages");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const hotelGrid = document.getElementById("hotel-grid");
+      const activitiesList = document.getElementById("activities-list");
+      let userId = "user_" + Math.random().toString(36).substr(2, 9);
+      let itineraryData = null;
+      let poisData = null;
+
+      // Helper to append a message
+      function appendMessage(role, content) {
+        const msg = document.createElement("div");
+        msg.className = "chat-message " + (role === "user" ? "user" : "bot");
+        msg.innerHTML = content;
+        chatMessages.appendChild(msg);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // Helper to render preference buttons
+      function renderPreferenceButtons(html) {
+        // Find all .preference-btn and attach click handler
+        setTimeout(() => {
+          document.querySelectorAll(".preference-btn").forEach((btn) => {
+            btn.onclick = () => {
+              const type = btn.getAttribute("data-type");
+              const value = btn.getAttribute("data-value");
+              let payload = {};
+              if (type === "interest") {
+                payload = { preference_type: type, value: value };
+              } else if (
+                type === "confirm_interests" ||
+                type === "budget" ||
+                type === "travel_style" ||
+                type === "generate_itinerary"
+              ) {
+                payload = { preference_type: type, value: value };
+              }
+              sendMessage(JSON.stringify(payload));
+            };
+          });
+        }, 100);
+      }
+
+      // Send message to backend
+      function sendMessage(message) {
+        appendMessage(
+          "user",
+          message.startsWith("{") ? "[Selected Option]" : message
+        );
+        chatInput.value = "";
+        fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, message: message }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            appendMessage("bot", data.reply);
+            renderPreferenceButtons(data.reply);
+            // If POIs are returned, store for hotel rendering
+            if (data.pois) {
+              poisData = data.pois;
+              renderHotels(poisData);
+            }
+            // If itinerary is returned, render activities
+            if (data.itinerary) {
+              itineraryData = data.itinerary;
+              renderActivities(itineraryData);
+            }
+          })
+          .catch(() => {
+            appendMessage("bot", "⚠️ Error connecting to server.");
+          });
+      }
+
+      // Handle chat form submit
+      chatForm.onsubmit = (e) => {
+        e.preventDefault();
+        const msg = chatInput.value.trim();
+        if (msg) sendMessage(msg);
+      };
+
+      // Initial greeting
+      appendMessage(
+        "bot",
+        "👋 Hi! Let's plan your weekend trip.<br>Type <b>create trip</b> to get started."
+      );
+
+      // --- Render Hotels ---
+      function renderHotels(pois) {
+        hotelGrid.innerHTML = "";
+        if (!pois || !pois.length) return;
+        pois.slice(0, 6).forEach((poi, i) => {
+          const imgUrl = `https://image.pollinations.ai/prompt/cinematic%20photograph%20of%20${encodeURIComponent(
+            poi.name
+          )}%20in%20destination?width=600&height=400&nologo=true`;
+          hotelGrid.innerHTML += `
+            <div class="hotel-card">
+              <img src="${imgUrl}" alt="Hotel ${i + 1}" class="hotel-image" />
+              <div class="hotel-info">
+                <h3>${poi.name}</h3>
+                <p class="hotel-location">${poi.category}</p>
+                <div class="hotel-meta-row">
+                  <span class="hotel-price-group">
+                    <img src="{{ url_for('static', filename='assets/price-icon.png') }}" alt="Price" class="hotel-price-icon" />
+                    <span class="hotel-price">${
+                      poi.price ? "From $" + poi.price : ""
+                    }</span>
+                  </span>
+                  <span class="hotel-rating-group">
+                    <img src="{{ url_for('static', filename='assets/rating-icon.png') }}" alt="Rating" class="hotel-rating-icon" />
+                    <span class="hotel-rating">${
+                      poi.rating ? poi.rating : (4.5 - i * 0.1).toFixed(1)
+                    }</span>
+                  </span>
+                </div>
+                <button class="map-button" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${
+                  poi.lat
+                },${poi.lon}')">View on Map</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      // --- Render Activities/Itinerary ---
+      function renderActivities(itinerary) {
+        activitiesList.innerHTML = "";
+        if (!itinerary || !itinerary.length) return;
+
+        // Group by day (Saturday/Sunday) based on time or just split in half if no day info
+        let sat = [],
+          sun = [];
+        if (itinerary.length > 1) {
+          // Try to split by time (before/after 12:00)
+          itinerary.forEach((item) => {
+            let hour = 0;
+            if (item.time) {
+              let match = item.time.match(/(\d{1,2}):/);
+              hour = match ? parseInt(match[1]) : 0;
+            }
+            if (hour < 12) sat.push(item);
+            else sun.push(item);
+          });
+        } else {
+          sat = itinerary;
+        }
+
+        function activityCard(item) {
+          const img =
+            item.photo ||
+            `https://image.pollinations.ai/prompt/cinematic%20photograph%20of%20${encodeURIComponent(
+              item.poi_name || item.title
+            )}%20in%20destination?width=600&height=400&nologo=true`;
+          return `
+            <div class="activity-card">
+              <img src="${img}" alt="Activity" class="activity-image" />
+              <div class="activity-info">
+                <div style="font-weight: 600">${item.time || ""}</div>
+                <h3>${item.title || ""}</h3>
+                <p class="activity-location">${item.poi_name || ""}</p>
+                <div class="activity-desc">${item.description || ""}</div>
+                <div class="activity-meta-row">
+                  <span class="activity-price">${
+                    item.price ? "$" + item.price : ""
+                  }</span>
+                </div>
+                ${
+                  item.lat && item.lon
+                    ? `<button class="map-button" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}')">View on Map</button>`
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+        }
+
+        if (sat.length) {
+          activitiesList.innerHTML += `<div class="day-plan"><h3>Saturday</h3><div class="activity-grid">${sat
+            .map(activityCard)
+            .join("")}</div></div>`;
+        }
+        if (sun.length) {
+          activitiesList.innerHTML += `<div class="day-plan"><h3>Sunday</h3><div class="activity-grid">${sun
+            .map(activityCard)
+            .join("")}</div></div>`;
+        }
+      }
+
+      // Click to toggle dropdown
+      document.addEventListener("DOMContentLoaded", function () {
+        const userProfile = document.querySelector(".user-profile");
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector(".profile-btn");
+        const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+        profileBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle("open");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove("open");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
