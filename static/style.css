@@ -578,60 +578,66 @@ input[type="text"], input[type="number"], input[list] {
 
 /* Two-Column Layout for Trip Page */
 .trip-layout {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 48px;
+  margin-top: 40px;
 }
 
 /* Chatbot Column */
 .chatbot-column {
+  flex: 0 0 400px;         /* narrower so it doesn't feel too wide */
   display: flex;
-  flex-direction: column;
-  min-width: 340px;
-  max-width: 380px;
+  justify-content: flex-start; 
+  align-items: flex-start;
+  margin-top: 0;
+  height: auto;            /* let it size naturally */
 }
 
 .chatbot-box {
-  flex: 1;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  padding: 1rem;
-  background: #fafafa;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 4px 16px 0 rgba(0,0,0,0.10);
+  width: 100%;
+  max-width: 480px;
   min-height: 600px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #888;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 100px; /* sticks under navbar */
-}
-
-/* Itinerary Column */
-.itinerary-column {
+  height: 600px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  justify-content: flex-end;
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
 }
 
-.itinerary-column h2 {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+.chat-messages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 28px 28px 12px 28px;
+  max-height: 420px;
+  min-height: 220px;
+  scrollbar-width: thin;
+  scrollbar-color: #ff6b35 #f5f5f5;
 }
 
-.hotel-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .hotel-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+@media (max-width: 900px) {
+  .trip-layout {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 16px;
+  }
+  .chatbot-column {
+    max-width: 100vw;
+    width: 100vw;
+    min-width: 0;
+    justify-content: center;
+    height: auto;
+  }
+  .chatbot-box {
+    max-width: 98vw;
+    min-width: 0;
+    height: 480px;
   }
 }
 
@@ -931,8 +937,14 @@ body {
 }
 
 .chatbot-box {
-  position: sticky;
-  top: 100px;
+  position: relative;       /* remove sticky so it’s not pushed down */
+  top: 0;
+  margin-left: 0;
+  margin: 0;                /* remove auto-centering */
+  min-height: 500px;        /* smaller base height */
+  height: auto;             /* allow it to grow with content */
+  max-height: calc(100vh - 120px); /* keeps it inside the viewport */
+  overflow: hidden;         /* keeps rounded edges clean */
   min-height: 600px;
   background: #fafafa;
 }
@@ -957,4 +969,165 @@ body {
 .create-trip-btn:hover {
   background: #e55d2d;
   box-shadow: 0 8px 24px 0 rgba(255,107,53,0.13);
+}
+
+/* Chatbot Card */
+.chatbot-box {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 4px 16px 0 rgba(0,0,0,0.10);
+  padding: 0;
+  width: 100%;
+  max-width: 540px;   /* was 480px */
+  min-height: 640px;  /* was 540px */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  margin: 0 auto;
+}
+
+.chat-messages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 28px 28px 12px 28px;
+  max-height: 400px;
+  min-height: 220px;
+  scrollbar-width: thin;
+  scrollbar-color: #a2a2a2 #f5f5f5;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #ff6b35;
+  border-radius: 8px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+/* Base chat message */
+.chat-message {
+  max-width: 75%;
+  padding: 10px 14px;
+  margin: 8px 0;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+/* User message (right side) */
+.chat-message.user {
+  background: #ff6b35; /* orange bubble */
+  color: white;
+  margin-left: auto;   /* push to right */
+  border-bottom-right-radius: 4px; /* "speech bubble" effect */
+}
+/* Bot message (left side) */
+.chat-message.bot {
+  background: #f1f1f1;
+  color: #333;
+  margin-right: auto;  /* push to left */
+  border-bottom-left-radius: 4px;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #eee;
+  padding: 18px 22px 18px 22px;
+  background: #fff;
+  border-radius: 0 0 22px 22px;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  border: none;
+  font-size: 1.08rem;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  margin-right: 12px;
+  outline: none;
+}
+
+.chat-send-btn {
+  background: transparent; /* transparent so image is visible */
+  border: none;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.chat-send-btn img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.chat-send-btn:hover {
+  background: rgba(255, 107, 53, 0.1); /* subtle hover effect */
+  transform: scale(1.1);
+}
+/* Preference Buttons with Images */
+.preference-btn-group {
+  display: flex;
+  gap: 18px;
+  justify-content: flex-start;
+  margin: 18px 0 10px 0;
+  flex-wrap: wrap;
+}
+.preference-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f5f5;
+  border: 2px solid #eee;
+  border-radius: 14px;
+  padding: 12px 18px 10px 18px;
+  cursor: pointer;
+  min-width: 90px;
+  transition: border 0.2s, background 0.2s;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.preference-btn.selected,
+.preference-btn:active {
+  border: 2px solid #ff6b35;
+  background: #fff3ed;
+}
+.preference-btn img {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 6px;
+}
+.preference-btn-label {
+  font-size: 0.98rem;
+  color: #333;
+  margin-top: 2px;
+}
+
+/* Responsive for chatbot */
+@media (max-width: 900px) {
+  .trip-layout {
+    flex-direction: column;
+  }
+  .chatbot-column, .itinerary-column {
+    max-width: 100%;
+    width: 100%;
+  }
+  .chatbot-box {
+    max-width: 100%;
+    min-width: 0;
+  }
 }

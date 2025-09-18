@@ -234,7 +234,18 @@ def chat():
         if state["stage"] == "ask_interests" and pref_type == "interest":
             if value not in state["prefs"]["interests"]:
                 state["prefs"]["interests"].append(value)
-            return jsonify({"reply": f"Added interest: <b>{value}</b>"})
+            # Always return the buttons so user can pick more
+            reply = f"""
+            Added interest: <b>{value}</b><br>
+            Select more interests or click Done:<br>
+            <button class='preference-btn' data-type='interest' data-value='alam'>Alam</button>
+            <button class='preference-btn' data-type='interest' data-value='kuliner'>Kuliner</button>
+            <button class='preference-btn' data-type='interest' data-value='sejarah'>Sejarah</button>
+            <button class='preference-btn' data-type='interest' data-value='belanja'>Belanja</button>
+            <button class='preference-btn' data-type='interest' data-value='santai'>Santai</button><br>
+            <button class='preference-btn' data-type='confirm_interests' data-value='done'>Done</button>
+            """
+            return jsonify({"reply": reply})
 
         if state["stage"] == "ask_interests" and pref_type == "confirm_interests":
             state["stage"] = "suggest_options"
@@ -256,8 +267,16 @@ def chat():
             """
             model = genai.GenerativeModel("gemini-1.5-flash")
             response = model.generate_content(prompt)
+            # Try to extract JSON from code block or plain text
+            import re
+            itinerary = None
             try:
-                itinerary = json.loads(response.text)
+                text = response.text
+                # Remove code block markers if present
+                match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
+                if match:
+                    text = match.group(1)
+                itinerary = json.loads(text)
                 # Enrich itinerary with images
                 for item in itinerary:
                     if item.get("poi_name"):
@@ -266,7 +285,6 @@ def chat():
             except Exception:
                 itinerary = [{"time": "", "title": "Itinerary", "description": response.text, "poi_name": None}]
                 reply = "✅ Itinerary generated, but could not parse as JSON. Showing as text."
-
             state["stage"] = "completed"
             return jsonify({"reply": reply, "itinerary": itinerary})
 
@@ -296,3 +314,30 @@ def devtools():
 # -------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
+def get_pois(budget, interests, travel_style):
+    # Dummy POIs for demo; replace with Google Maps API or your own logic
+    return [
+        {
+            "name": "Hotel 1",
+            "category": "Hotel",
+            "description": "A nice hotel.",
+            "price": 260,
+            "rating": 4.5,
+            "lat": -6.2,
+            "lon": 106.8,
+        },
+        {
+            "name": "Hotel 2",
+            "category": "Hotel",
+            "description": "Another nice hotel.",
+            "price": 260,
+            "rating": 4.3,
+            "lat": -6.21,
+            "lon": 106.81,
+        }
+    ]
+
+def get_pollinations_image(name, destination):
+    # Returns a pollinations image URL for the POI
+    return f"https://image.pollinations.ai/prompt/cinematic%20photograph%20of%20{urllib.parse.quote(name)}%20in%20{urllib.parse.quote(destination)}?width=600&height=400&nologo=true"

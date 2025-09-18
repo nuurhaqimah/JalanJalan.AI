@@ -53,35 +53,32 @@
       <!-- Left Column: Chatbot (fixed) -->
       <section class="chatbot-column">
         <div class="chatbot-box" id="chatbot-box">
-          <!-- Chatbot UI will be rendered here -->
           <div id="chat-messages" class="chat-messages"></div>
           <form id="chat-form" autocomplete="off">
             <div class="chat-input-row">
               <input
                 type="text"
                 id="chat-input"
-                placeholder="Type your message..."
+                placeholder="Start typing here..."
                 autocomplete="off"
                 class="chat-input"
               />
-              <button type="submit" class="chat-send-btn">&#9654;</button>
+              <button type="submit" class="chat-send-btn">
+                <img src="{{ url_for('static', filename='assets/send-icon.png') }}" alt="Send" class="send-icon" />
+              </button>
             </div>
           </form>
         </div>
       </section>
 
       <!-- Right Column: Scrollable Itinerary -->
-      <section class="itinerary-column scrollable-itinerary">
+      <section class="itinerary-column scrollable-itinerary" id="itinerary-section" style="display:none;">
         <div id="itinerary-content">
           <!-- Dynamic itinerary and hotels will be rendered here -->
           <h2>Hotels</h2>
-          <div class="hotel-grid" id="hotel-grid">
-            <!-- Hotel cards will be injected here -->
-          </div>
+          <div class="hotel-grid" id="hotel-grid"></div>
           <h2 style="margin-top: 2rem">Weekend Activities</h2>
-          <div id="activities-list">
-            <!-- Activities will be injected here -->
-          </div>
+          <div id="activities-list"></div>
         </div>
       </section>
     </main>
@@ -106,62 +103,83 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      // Helper to render preference buttons
+      // Helper to render preference buttons (budget only, with placeholder images)
       function renderPreferenceButtons(html) {
-        // Find all .preference-btn and attach click handler
-        setTimeout(() => {
-          document.querySelectorAll(".preference-btn").forEach((btn) => {
-            btn.onclick = () => {
-              const type = btn.getAttribute("data-type");
-              const value = btn.getAttribute("data-value");
-              let payload = {};
-              if (type === "interest") {
-                payload = { preference_type: type, value: value };
-              } else if (
-                type === "confirm_interests" ||
-                type === "budget" ||
-                type === "travel_style" ||
-                type === "generate_itinerary"
-              ) {
-                payload = { preference_type: type, value: value };
-              }
-              sendMessage(JSON.stringify(payload));
-            };
-          });
-        }, 100);
+  // Parse and render all <button class='preference-btn' ...> in the HTML
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = html;
+  const buttons = tempDiv.querySelectorAll(".preference-btn");
+  if (buttons.length === 0) return;
+
+  // Remove any existing preference button groups before adding new ones
+  document.querySelectorAll('.preference-btn-group').forEach(el => el.remove());
+
+  const group = document.createElement("div");
+  group.className = "preference-btn-group";
+  buttons.forEach((btn) => {
+    const newBtn = document.createElement("button");
+    newBtn.className = btn.className;
+    newBtn.setAttribute("data-type", btn.getAttribute("data-type"));
+    newBtn.setAttribute("data-value", btn.getAttribute("data-value"));
+    newBtn.innerHTML = btn.innerHTML;
+    newBtn.onclick = (e) => {
+      e.preventDefault();
+      const type = newBtn.getAttribute("data-type");
+      const value = newBtn.getAttribute("data-value");
+      if (type === "interest") {
+        appendMessage("user", `You selected: ${newBtn.innerText.split('\n')[0]}`);
+        let payload = { preference_type: type, value: value };
+        sendMessage(JSON.stringify(payload));
+        // Do NOT remove the group, keep showing buttons until "Done"
+      } else {
+        appendMessage("user", `You selected: ${newBtn.innerText.split('\n')[0]}`);
+        let payload = { preference_type: type, value: value };
+        sendMessage(JSON.stringify(payload));
+        // Remove the group for non-interest buttons (e.g., Done, budget, style)
+        group.remove();
       }
+    };
+    group.appendChild(newBtn);
+  });
+  chatMessages.appendChild(group);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
       // Send message to backend
       function sendMessage(message) {
-        appendMessage(
-          "user",
-          message.startsWith("{") ? "[Selected Option]" : message
-        );
-        chatInput.value = "";
-        fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, message: message }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            appendMessage("bot", data.reply);
-            renderPreferenceButtons(data.reply);
-            // If POIs are returned, store for hotel rendering
-            if (data.pois) {
-              poisData = data.pois;
-              renderHotels(poisData);
-            }
-            // If itinerary is returned, render activities
-            if (data.itinerary) {
-              itineraryData = data.itinerary;
-              renderActivities(itineraryData);
-            }
-          })
-          .catch(() => {
-            appendMessage("bot", "⚠️ Error connecting to server.");
-          });
+  // Only append user message if it's not a JSON payload (i.e., user typed)
+  try {
+    JSON.parse(message);
+  } catch {
+    appendMessage("user", message);
+  }
+  chatInput.value = "";
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, message: message }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      appendMessage("bot", data.reply);
+      renderPreferenceButtons(data.reply);
+      // If POIs are returned, store for hotel rendering
+      if (data.pois) {
+        poisData = data.pois;
+        // Do not show itinerary section yet
       }
+      // If itinerary is returned, render activities and show section
+      if (data.itinerary) {
+        itineraryData = data.itinerary;
+        document.getElementById("itinerary-section").style.display = "block"; 
+        renderHotels(poisData);
+        renderActivities(itineraryData);
+      }
+    })
+    .catch(() => {
+      appendMessage("bot", "⚠️ Error connecting to server.");
+    });
+}
 
       // Handle chat form submit
       chatForm.onsubmit = (e) => {
