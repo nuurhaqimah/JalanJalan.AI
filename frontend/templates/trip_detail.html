@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ trip.title }} • JalanJalan.AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      .detail-container { max-width: 900px; margin: 24px auto; background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08); padding: 24px; }
+      .detail-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+      .title { font-size: 1.6rem; font-weight: 800; margin:0; }
+      .sub { color:#777; font-size: 0.95rem; }
+      .actions { display:flex; gap:10px; }
+      .btn { background:#ff6b35; color:#fff; border:none; border-radius:10px; padding:10px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+      .btn.secondary { background:#555; }
+      .btn.danger { background:#e53935; }
+      .slot { border-bottom:1px solid #eee; padding:10px 0; }
+      .slot h4 { margin:0 0 4px 0; }
+    </style>
+  </head>
+  <body>
+    <nav class="main-navbar">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" />
+        <a class="no-underline" href="{{ url_for('index') }}">JalanJalan.AI</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+      <div class="nav-actions">
+        {% if session.get('user') %}
+        <div class="user-profile">
+          <button class="profile-btn" title="{{ session.get('user').get('name','User') }}">
+            <img src="{{ url_for('static', filename='assets/default-avatar.png') }}" alt="User" class="user-avatar" />
+          </button>
+          <div class="dropdown-menu">
+            <a href="{{ url_for('mytrips') }}">My Trips</a>
+            <a href="{{ url_for('user_logout') }}">Logout</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="{{ url_for('user_login') }}" class="get-started-btn">Get started</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <main class="detail-container" data-id="{{ trip.id }}">
+      <div class="detail-header">
+        <div>
+          <h1 class="title">{{ trip.title }}</h1>
+          <div class="sub">Created {{ trip.created_at }}</div>
+          {% if trip.description %}
+          <div class="sub">{{ trip.description }}</div>
+          {% endif %}
+        </div>
+        <div class="actions">
+          <a href="{{ url_for('mytrips') }}" class="btn secondary">← Back to My Trips</a>
+          <a href="{{ url_for('mytrips_export', it_id=trip.id) }}" class="btn">Export PDF</a>
+          <button class="btn danger" id="deleteTripBtn">Delete Trip</button>
+        </div>
+      </div>
+
+      {% set schedule = trip.data.get('schedule', []) if trip.data else [] %}
+      {% if schedule %}
+        {% for s in schedule %}
+        <div class="slot">
+          <h4>{{ s.get('day','') }} {{ s.get('start', s.get('time','')) }} - {{ s.get('end','') }}</h4>
+          <div><strong>{{ s.get('name', s.get('title','')) }}</strong>{% if s.get('poi_name') %} ({{ s.get('poi_name') }}){% endif %}</div>
+          {% if s.get('notes') or s.get('description') %}
+          <div class="sub">{{ s.get('notes', s.get('description','')) }}</div>
+          {% endif %}
+          {% if s.get('image') %}
+          <div style="margin-top:8px;"><img src="{{ s.get('image') }}" alt="" style="max-width:100%; border-radius:10px;"/></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p>No schedule details found for this trip.</p>
+      {% endif %}
+    </main>
+
+    <script>
+      document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('#deleteTripBtn');
+        if (!btn) return;
+        const root = document.querySelector('.detail-container');
+        const id = root?.getAttribute('data-id');
+        if (!id) return;
+        if (!confirm('Delete this trip?')) return;
+        try {
+          const res = await fetch(`/mytrips/${id}/delete`, { method: 'DELETE' });
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            window.location.href = "{{ url_for('mytrips') }}";
+          } else {
+            alert(data.message || 'Failed to delete');
+          }
+        } catch (e) {
+          alert('Network error');
+        }
+      });
+
+      // Navbar dropdown toggle
+      document.addEventListener('DOMContentLoaded', function () {
+        const userProfile = document.querySelector('.user-profile');
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector('.profile-btn');
+        profileBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle('open');
+        });
+        document.addEventListener('click', function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove('open');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

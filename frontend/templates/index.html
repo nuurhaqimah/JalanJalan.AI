@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planner</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="hero">
+      <!-- Navbar -->
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline"
+            >JalanJalan.AI</a
+          >
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if session.get('user') %}
+          <div class="user-profile">
+            <button class="profile-btn" title="{{ session.get('user').get('name', 'User') }}">
+              <span class="user-avatar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>
+                </svg>
+              </span>
+              <span class="user-name">{{ session.get('user').get('name', 'User') }}</span>
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('user_logout') }}">Logout</a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{{ url_for('user_login') }}" class="get-started-btn">Get started</a>
+          {% endif %}
+          <a href="/login" class="admin-login-btn" aria-label="Admin Login">
+            <span class="icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="label">Admin</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Hero section -->
+      <div class="hero-content">
+        <h1>Plan Your <span>Perfect Weekend</span> In Seconds</h1>
+        <p>Your next destination, intelligently planned.</p>
+        {% if session.get('user') %}
+        <a href="{{ url_for('trip') }}">Plan My Trip ➝</a>
+        {% else %}
+        <a href="{{ url_for('user_login') }}">Plan My Trip ➝</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <section id="how">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>1. Tell Us Your Preferences</h3>
+          <p>Enter your travel dates, budget, and interests.</p>
+        </div>
+        <div class="step">
+          <h3>2. AI Builds Your Itinerary</h3>
+          <p>Our AI creates a smart, optimized weekend plan just for you.</p>
+        </div>
+        <div class="step">
+          <h3>3. Explore & Enjoy</h3>
+          <p>
+            Get a personalized itinerary with maps, recommendations, and
+            activities.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      // Click to toggle dropdown
+      document.addEventListener("DOMContentLoaded", function () {
+        const userProfile = document.querySelector(".user-profile");
+        if (!userProfile) return;
+        const profileBtn = userProfile.querySelector(".profile-btn");
+        const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+        profileBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userProfile.classList.toggle("open");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!userProfile.contains(e.target)) {
+            userProfile.classList.remove("open");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

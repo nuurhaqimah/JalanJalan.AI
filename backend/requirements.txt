@@ -1,0 +1,10 @@
+google-generativeai
+python-dotenv
+Flask
+requests
+psycopg2-binary
+Flask-Cors
+weasyprint
+Pillow
+amadeus
+

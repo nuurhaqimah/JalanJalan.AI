@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Us - JalanJalan.AI</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="main-navbar">
+      <div class="logo">
+        <img
+          src="{{ url_for('static', filename='assets/logo.png') }}"
+          alt="Logo"
+        />
+        <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+      <div class="nav-actions">
+        {% if session.get('user') %}
+          <div class="user-profile">
+            <button class="profile-btn" title="{{ session.get('user').get('name','User') }}">
+              <span class="user-avatar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>
+                </svg>
+              </span>
+              <span class="user-name">{{ session.get('user').get('name','User') }}</span>
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('user_logout') }}">Logout</a>
+            </div>
+          </div>
+        {% else %}
+          <a href="{{ url_for('user_login') }}" class="get-started-btn">Get started</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <div class="contact-container">
+      <h2>Contact Us</h2>
+      <form id="contactForm">
+        <input type="text" name="name" placeholder="Your Name" required />
+        <input type="email" name="email" placeholder="Your Email" required />
+        <textarea
+          name="message"
+          rows="5"
+          placeholder="Your Message"
+          required
+        ></textarea>
+        <button type="submit">Send Message</button>
+      </form>
+      <div id="thankYouMessage">
+        <h3>Thank you!</h3>
+        <p>Your message has been sent successfully.</p>
+      </div>
+    </div>
+
+    <script>
+      // Dropdown toggle for user-profile navbar
+      document.addEventListener('DOMContentLoaded', function () {
+        const userProfile = document.querySelector('.user-profile');
+        if (userProfile) {
+          userProfile.querySelector('.profile-btn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            userProfile.classList.toggle('open');
+          });
+          document.addEventListener('click', function (e) {
+            if (!userProfile.contains(e.target)) userProfile.classList.remove('open');
+          });
+        }
+      });
+
+      const form = document.getElementById("contactForm");
+      const thankYouMessage = document.getElementById("thankYouMessage");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        form.style.display = "none";
+        thankYouMessage.style.display = "block";
+      });
+    </script>
+  </body>
+</html>

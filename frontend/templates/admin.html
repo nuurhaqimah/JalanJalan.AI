@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - JalanJalan.AI</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+      }
+      h1,
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+      }
+      .card {
+        background: #fff;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      form input,
+      form textarea,
+      form select {
+        width: 100%;
+        padding: 10px;
+        margin: 6px 0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      form button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      form button:hover {
+        background: #0056b3;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #ccc;
+      }
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      .actions button {
+        margin-right: 6px;
+        padding: 6px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .edit-btn {
+        background: #ffc107;
+        color: #fff;
+      }
+      .edit-btn:hover {
+        background: #e0a800;
+      }
+      .delete-btn {
+        background: #dc3545;
+        color: #fff;
+      }
+      .delete-btn:hover {
+        background: #b02a37;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🛠️ Admin Dashboard - Manage Destinations</h1>
+
+      <!-- Add / Update Form -->
+      <div class="card">
+        <h2>Add / Update Destination</h2>
+        <form id="destinationForm">
+          <input type="hidden" id="destinationId" />
+
+          <input
+            type="text"
+            id="name"
+            placeholder="Destination Name"
+            required
+          />
+
+          <!-- Dropdown for Category -->
+          <select id="category" required>
+            <option value="">Select Category</option>
+            <option value="alam">Alam (Nature)</option>
+            <option value="kuliner">Kuliner (Culinary)</option>
+            <option value="sejarah">Sejarah (Historical)</option>
+            <option value="belanja">Belanja (Shopping)</option>
+          </select>
+
+          <!-- Dropdown for Budget Level -->
+          <select id="budget_level" required>
+            <option value="">Select Budget Level</option>
+            <option value="cheap">Cheap</option>
+            <option value="moderate">Moderate</option>
+            <option value="luxury">Luxury</option>
+          </select>
+
+          <!-- Dropdown for Travel Style -->
+          <select id="travel_style" required>
+            <option value="">Select Travel Style</option>
+            <option value="relaxing">Relaxing</option>
+            <option value="adventure">Adventure</option>
+            <option value="cultural">Cultural</option>
+            <option value="family">Family</option>
+          </select>
+
+          <input
+            type="text"
+            id="location"
+            name="location"
+            placeholder="Location (city, town, region)"
+            required
+          />
+
+          <select id="country" name="country" required>
+            <option value="">Select Country</option>
+          </select>
+
+          <textarea id="description" placeholder="Description"></textarea>
+
+          <button type="submit">Save Destination</button>
+        </form>
+      </div>
+
+      <!-- Destinations Table -->
+      <div class="card">
+        <h2>All Destinations</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Budget</th>
+              <th>Style</th>
+              <th>Location</th>
+              <th>Country</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="destinationsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('destinationForm');
+      const tableBody = document.getElementById('destinationsTable');
+      const countrySelect = document.getElementById('country');
+
+      function toFormData(obj) {
+        const fd = new FormData();
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) fd.append(k, v);
+        });
+        return fd;
+      }
+
+      function renderTable(pois) {
+        tableBody.innerHTML = '';
+        pois.forEach((dest) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${dest.name}</td>
+            <td>${dest.category}</td>
+            <td>${dest.budget_level}</td>
+            <td>${dest.travel_style || ''}</td>
+            <td>${dest.location}</td>
+            <td>${dest.country || ''}</td>
+            <td class="actions">
+              <button class="edit-btn" data-id="${dest.id}">Edit</button>
+              <button class="delete-btn" data-id="${dest.id}">Delete</button>
+            </td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }
+
+      async function loadPois() {
+        try {
+          const res = await fetch('/admin/pois');
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            renderTable(data.data || []);
+          } else {
+            alert(data.message || 'Failed to load POIs');
+          }
+        } catch (e) {
+          alert('Network error while loading POIs');
+        }
+      }
+
+      async function loadCountries() {
+        try {
+          const res = await fetch('/api/poi/filters');
+          const data = await res.json();
+          // Weekend preset list + DB countries
+          const preset = [
+            'Brunei', 'Malaysia', 'Thailand', 'Singapore', 'Indonesia', 'Philippines'
+          ];
+          const countries = Array.from(new Set([...(data.countries || []), ...preset]));
+          countrySelect.innerHTML = '<option value="">Select Country</option>';
+          countries.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c; opt.textContent = c; countrySelect.appendChild(opt);
+          });
+        } catch (e) { /* ignore */ }
+      }
+
+      // Handle add/update submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('destinationId').value;
+        const payload = {
+          name: document.getElementById('name').value,
+          category: document.getElementById('category').value,
+          budget_level: document.getElementById('budget_level').value,
+          travel_style: document.getElementById('travel_style').value,
+          location: document.getElementById('location').value,
+          country: document.getElementById('country').value,
+          description: document.getElementById('description').value,
+        };
+
+        try {
+          let res, data;
+          if (id) {
+            // Update
+            res = await fetch(`/admin/poi/${id}`, {
+              method: 'PUT',
+              body: toFormData(payload),
+            });
+            data = await res.json();
+          } else {
+            // Create
+            res = await fetch('/admin/add', { method: 'POST', body: toFormData(payload) });
+            data = await res.json();
+          }
+          if (res.ok && data.status === 'success') {
+            form.reset();
+            document.getElementById('destinationId').value = '';
+            loadPois();
+            if (data.message) alert(data.message);
+          } else {
+            alert(data.message || 'Operation failed');
+          }
+        } catch (err) {
+          alert('Network error while saving POI');
+        }
+      });
+
+      // Delegate edit/delete buttons
+      tableBody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        if (btn.classList.contains('delete-btn')) {
+          if (!confirm('Delete this POI?')) return;
+          try {
+            const res = await fetch(`/admin/poi/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+              loadPois();
+            } else {
+              alert(data.message || 'Failed to delete');
+            }
+          } catch (err) {
+            alert('Network error while deleting POI');
+          }
+        } else if (btn.classList.contains('edit-btn')) {
+          // Fetch current list and populate form from row values
+          const row = btn.closest('tr');
+          document.getElementById('destinationId').value = id;
+          document.getElementById('name').value = row.children[0].textContent;
+          document.getElementById('category').value = row.children[1].textContent;
+          document.getElementById('budget_level').value = row.children[2].textContent;
+          document.getElementById('travel_style').value = row.children[3].textContent;
+          document.getElementById('location').value = row.children[4].textContent;
+          document.getElementById('country').value = row.children[5].textContent;
+          // For description we don't have it in table; optional enhancement: fetch single POI
+          // Leave description as is for now
+        }
+      });
+
+      // Initial load
+      loadCountries();
+      loadPois();
+    </script>
+  </body>
+</html>

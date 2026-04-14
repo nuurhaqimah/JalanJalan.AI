@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planner - Trip</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <nav class="main-navbar">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" />
+        <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+      <div class="nav-actions">
+        {% if session.get('user') %}
+          <div class="user-profile">
+            <button class="profile-btn" title="{{ session.get('user').get('name','User') }}">
+              <span class="user-avatar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>
+                </svg>
+              </span>
+              <span class="user-name">{{ session.get('user').get('name','User') }}</span>
+            </button>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('mytrips') }}">My Trips</a>
+              <a href="{{ url_for('user_logout') }}">Logout</a>
+            </div>
+          </div>
+        {% else %}
+          <a href="{{ url_for('user_login') }}" class="get-started-btn">Get started</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <main>
+      <!-- Hero header -->
+      <section class="trip-hero">
+        <h1>Start planning your <span>trip.</span></h1>
+        <p>Skip the stress of travel planning. Our AI-powered itinerary planner creates personalized weekend getaways tailored to your interests, budget, and time — so you can explore more and worry less.</p>
+      </section>
+
+      <!-- Chat area -->
+      <section class="chat-wrapper">
+        <div class="chat-card">
+          <div id="chatBox" class="chat-box">
+            <div class="chat-message bot">
+              Hi! I’m JalanJalan.AI, your travel assistant. Tell me where you’d like to go and what kind of weekend you’re dreaming of, and I’ll plan it for you.
+            </div>
+          </div>
+          <!-- Quick options (chips) injected from /chat responses -->
+          <div id="quickOptions" class="chip-row" style="display:none;"></div>
+          <!-- Save itinerary button (hidden until an itinerary is produced) -->
+          <div style="display:flex; justify-content:flex-end; margin: 8px 6px 10px;">
+            <button id="saveItineraryBtn" class="cta-btn" style="display:none;">Save this itinerary</button>
+          </div>
+          <div class="chat-input-bar">
+            <input type="text" id="chatInput" placeholder="Start typing here..."/>
+            <button id="sendChatBtn" class="send-btn" aria-label="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Toggle dropdown in navbar
+      document.addEventListener('DOMContentLoaded', function(){
+        const userProfile = document.querySelector('.user-profile');
+        if (userProfile) {
+          const profileBtn = userProfile.querySelector('.profile-btn');
+          profileBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            userProfile.classList.toggle('open');
+          });
+          document.addEventListener('click', function(e){
+            if (!userProfile.contains(e.target)) userProfile.classList.remove('open');
+          });
+        }
+      });
+
+      const chatBox = document.getElementById('chatBox');
+      const input = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendChatBtn');
+      const quickOptions = document.getElementById('quickOptions');
+      const saveBtn = document.getElementById('saveItineraryBtn');
+      let lastItinerary = null;
+      let typingEl = null;   // single reference — no duplicate IDs
+      let isSending = false; // prevent overlapping requests
+
+      // --- Disable send button when input is empty ---
+      function updateSendBtn() {
+        sendBtn.disabled = input.value.trim() === '' || isSending;
+      }
+      input.addEventListener('input', updateSendBtn);
+      updateSendBtn();
+
+      function renderOptions(options){
+        if (!Array.isArray(options) || options.length === 0){
+          quickOptions.style.display = 'none';
+          quickOptions.innerHTML = '';
+          return;
+        }
+        quickOptions.innerHTML = options.map(opt => {
+          const label = typeof opt === 'string' ? opt : (opt.label || opt.value || '');
+          const value = typeof opt === 'string' ? opt : (opt.value || opt.label || '');
+          return `<button class="chip" data-value="${value}">${label}</button>`;
+        }).join('');
+        quickOptions.style.display = '';
+      }
+
+      function appendMessage(text, who='user'){
+        if (!text) return;
+        const div = document.createElement('div');
+        div.className = `chat-message ${who}`;
+        div.textContent = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function showTyping(){
+        if (typingEl) typingEl.remove();
+        typingEl = document.createElement('div');
+        typingEl.className = 'chat-message bot typing-indicator';
+        typingEl.textContent = 'JalanJalan.AI is typing…';
+        chatBox.appendChild(typingEl);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      function hideTyping(){
+        if (typingEl) { typingEl.remove(); typingEl = null; }
+      }
+
+      function renderItinerary(items){
+        if (!Array.isArray(items) || !items.length) return;
+        lastItinerary = items;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chat-message bot';
+        const lines = [];
+        let day = '';
+        items.forEach(it=>{
+          if (it.day !== day){
+            day = it.day; lines.push(`\n${day}:`);
+          }
+          lines.push(`- ${it.time}: ${it.title} (${it.category || ''}) — ${it.location || ''}`);
+        });
+        wrapper.textContent = lines.join('\n');
+        chatBox.appendChild(wrapper);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        saveBtn.style.display = '';
+      }
+
+      async function sendMessage(forcedText){
+        const text = (typeof forcedText === 'string' ? forcedText : input.value).trim();
+        if (!text || isSending) return;
+        appendMessage(text, 'user');
+        input.value = '';
+        isSending = true;
+        updateSendBtn();
+        quickOptions.style.display = 'none';
+        quickOptions.innerHTML = '';
+        showTyping();
+        try {
+          const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+          });
+          if (!res.ok) throw new Error(`Server error ${res.status}`);
+          const data = await res.json();
+          if (data.reply) {
+            // When an itinerary is also returned, only show the intro sentence
+            // to avoid duplicating the schedule that renderItinerary will display.
+            const replyText = data.itinerary
+              ? data.reply.split('\n\n')[0]
+              : data.reply;
+            appendMessage(replyText, 'bot');
+          }
+          renderOptions(data.options || []);
+          if (data.itinerary) renderItinerary(data.itinerary);
+        } catch (e) {
+          appendMessage('Something went wrong. Please try again.', 'bot');
+        } finally {
+          hideTyping();
+          isSending = false;
+          updateSendBtn();
+        }
+      }
+
+      // Fix: arrow wrapper so the click Event object is NOT passed as forcedText
+      sendBtn.addEventListener('click', () => sendMessage());
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }});
+      quickOptions.addEventListener('click', (e) => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        sendMessage(chip.dataset.value);
+      });
+      // Kick off the guided flow so the bot asks for country on load
+      window.addEventListener('load', () => {
+        setTimeout(() => sendMessage('start'), 200);
+      });
+
+      // Save itinerary to backend (legacy 'itineraries' table)
+      saveBtn.addEventListener('click', async ()=>{
+        if (!lastItinerary || !lastItinerary.length) return;
+        try {
+          saveBtn.disabled = true;
+          const res = await fetch('/itineraries/legacy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: { schedule: lastItinerary } })
+          });
+          const data = await res.json();
+          if (res.ok && data.status === 'success'){
+            window.location.href = '/mytrips';
+          } else {
+            appendMessage(data.message || 'Failed to save itinerary.', 'bot');
+          }
+        } catch (e){
+          appendMessage('Network error while saving. Please try again later.', 'bot');
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

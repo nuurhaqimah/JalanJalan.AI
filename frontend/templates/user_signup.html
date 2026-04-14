@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account • JalanJalan.AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      .login-page { min-height: 100vh; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #fff6f3 0%, #ffffff 100%); padding: 24px; }
+      .login-card { width: 100%; max-width: 480px; background: #fff; border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.08); padding: 28px; }
+      .login-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      .login-header img { width: 40px; height: 40px; }
+      .login-title { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+      .login-subtitle { color: #666; margin: 4px 0 16px 0; font-size: 0.98rem; }
+      .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .form-group { margin-bottom: 14px; }
+      .form-label { display:block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+      .form-input { width: 100%; padding: 12px 14px; border: 1px solid #e6e6e6; border-radius: 10px; outline: none; background: #fafafa; transition: border 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
+      .form-input:focus { background: #fff; border-color: #ff6b35; box-shadow: 0 0 0 4px rgba(255,107,53,0.12); }
+      .submit-btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #ff6b35; color: #fff; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; }
+      .submit-btn:hover { background: #e55d2d; box-shadow: 0 8px 20px rgba(255,107,53,0.18); }
+      .submit-btn:active { transform: translateY(1px); }
+      .error-alert { background: #fff2f0; color: #c62828; border: 1px solid #ffcdd2; border-radius: 10px; padding: 10px 12px; margin: 8px 0 14px 0; font-size: 0.95rem; }
+      .login-footer { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: #777; }
+      .back-link { color: #666; text-decoration: none; }
+      .back-link:hover { color: #ff6b35; }
+    </style>
+  </head>
+  <body>
+    <main class="login-page">
+      <section class="login-card" role="region" aria-labelledby="loginTitle">
+        <div class="login-header">
+          <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="JalanJalan.AI logo" />
+          <h1 id="loginTitle" class="login-title">Create Account</h1>
+        </div>
+        <p class="login-subtitle">Sign up to save and plan your trips.</p>
+
+        {% if error %}
+          <div class="error-alert" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/user/signup" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input id="username" class="form-input" type="text" name="username" placeholder="Choose a username" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email (optional)</label>
+            <input id="email" class="form-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="password">Password</label>
+              <input id="password" class="form-input" type="password" name="password" placeholder="Create a password" autocomplete="new-password" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirm">Confirm</label>
+              <input id="confirm" class="form-input" type="password" name="confirm" placeholder="Repeat password" autocomplete="new-password" required />
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" aria-label="Create account">Create Account</button>
+        </form>
+
+        <div class="login-footer">
+          <a href="{{ url_for('user_login') }}" class="back-link">Already have an account? Sign in →</a>
+          <span>JalanJalan.AI</span>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

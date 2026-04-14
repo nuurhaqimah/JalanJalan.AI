@@ -1,0 +1,32 @@
+# Environment variables - never commit real credentials
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+venv/
+.venv/
+env/
+backend/venv/
+backend/.venv/
+
+# Claude Code session files
+.claude/
+
+# VS Code temp files
+tempCodeRunnerFile.py
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# WeasyPrint / PDF output
+*.pdf

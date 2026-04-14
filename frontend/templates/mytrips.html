@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Trips | AI Travel Planner</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      .trips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: center;
+        margin-top: 2rem;
+      }
+      .trip-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+        width: 340px;
+        padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        transition: box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+      }
+      .trip-card:hover {
+        box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.13);
+      }
+      .trip-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #222;
+      }
+      .trip-date {
+        font-size: 0.95rem;
+        color: #888;
+        margin-bottom: 1rem;
+      }
+      .trip-activities {
+        font-size: 1.05rem;
+        color: #444;
+        margin-bottom: 1rem;
+      }
+      .plan-btn {
+        background-color: #ff6b35;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        margin-top: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+      }
+      .plan-btn:hover {
+        background-color: #e55d2d;
+        transform: translateY(-2px);
+      }
+      .empty-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 70vh;
+        text-align: center;
+        color: #555;
+      }
+      .center-btn {
+        display: block;
+        margin: 32px auto 0 auto;
+        background: #ff6b35;
+        color: #fff;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 32px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 4px 16px 0 rgba(255, 107, 53, 0.08);
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      .center-btn:hover {
+        background: #e55d2d;
+        box-shadow: 0 8px 24px 0 rgba(255, 107, 53, 0.13);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar (same as index.html) -->
+    <nav>
+      <nav class="main-navbar">
+        <div class="logo">
+          <img
+            src="{{ url_for('static', filename='assets/logo.png') }}"
+            alt="Logo"
+          />
+          <a href="{{ url_for('index') }}" class="no-underline">JalanJalan.AI</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('index') }}#how">How It works</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          {% if session.get('user') %}
+            <a href="{{ url_for('trip') }}" class="create-trip-btn">Create a Trip</a>
+            <div class="user-profile">
+              <button class="profile-btn" title="{{ session.get('user').get('name', 'User') }}">
+                <img
+                  src="{{ url_for('static', filename='assets/default-avatar.png') }}"
+                  alt="User"
+                  class="user-avatar"
+                />
+              </button>
+              <div class="dropdown-menu">
+                <a href="{{ url_for('mytrips') }}">My Trips</a>
+                <a href="{{ url_for('user_logout') }}">Logout</a>
+              </div>
+            </div>
+          {% else %}
+            <a href="{{ url_for('user_login') }}" class="get-started-btn">Get started</a>
+          {% endif %}
+        </div>
+      </nav>
+
+      <div id="trips-root">
+        {% if not trips %}
+        <div class="empty-container" id="empty-msg" style="display:flex">
+          <h2>It seems like you have no trips...</h2>
+          <a href="{{ url_for('trip') }}" class="plan-btn center-btn">Plan my trip ➝</a>
+        </div>
+        {% else %}
+        <div class="trips-container" id="trips-list">
+          {% for t in trips %}
+          <div class="trip-card" data-id="{{ t.id }}">
+            <div class="trip-title">{{ t.title or 'Weekend Trip' }}</div>
+            <div class="trip-date">{{ t.created_at }}</div>
+            <div class="trip-activities">{{ t.description or '' }}</div>
+            <div style="display:flex; gap:10px;">
+              <a href="{{ url_for('view_trip', it_id=t.id) }}" class="plan-btn">View Details</a>
+              <a href="{{ url_for('mytrips_export', it_id=t.id) }}" class="plan-btn" style="background:#555;">Export PDF</a>
+              <button class="plan-btn delete-btn" style="background:#e53935" data-id="{{ t.id }}">Delete</button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <script>
+        document.addEventListener('click', async (e) => {
+          const btn = e.target.closest('.delete-btn');
+          if (!btn) return;
+          const id = btn.getAttribute('data-id');
+          if (!id) return;
+          if (!confirm('Delete this trip?')) return;
+          try {
+            const res = await fetch(`/mytrips/${id}/delete`, { method: 'DELETE' });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+              const card = document.querySelector(`.trip-card[data-id="${id}"]`);
+              if (card) card.remove();
+              if (!document.querySelector('.trip-card')) {
+                const root = document.getElementById('trips-root');
+                root.innerHTML = `
+                  <div class="empty-container" id="empty-msg" style="display:flex">
+                    <h2>It seems like you have no trips...</h2>
+                    <a href="/trip" class="plan-btn center-btn">Plan my trip ➝</a>
+                  </div>`;
+              }
+            } else {
+              alert(data.message || 'Failed to delete');
+            }
+          } catch (e) {
+            alert('Network error');
+          }
+        });
+      </script>
+      <script>
+        // Click to toggle dropdown
+        document.addEventListener("DOMContentLoaded", function () {
+          const userProfile = document.querySelector(".user-profile");
+          if (!userProfile) return;
+          const profileBtn = userProfile.querySelector(".profile-btn");
+          const dropdownMenu = userProfile.querySelector(".dropdown-menu");
+
+          profileBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userProfile.classList.toggle("open");
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener("click", function (e) {
+            if (!userProfile.contains(e.target)) {
+              userProfile.classList.remove("open");
+            }
+          });
+        });
+      </script>
+    </body>
+  </html>
